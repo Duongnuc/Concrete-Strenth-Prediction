@@ -1,6 +1,7 @@
-streamlit
+lightgbm
 joblib
+numpy
 pandas
 matplotlib
 scipy
-numpy
+streamlit
