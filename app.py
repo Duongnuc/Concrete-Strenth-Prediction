@@ -71,19 +71,25 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             tuoi
         ]
 
-        # Đảm bảo tất cả các giá trị là số và không chứa None
+        # Kiểm tra dữ liệu đầu vào
         try:
-            inputs = np.array(inputs, dtype=float)  # Chuyển sang mảng float
+            inputs = np.array(inputs, dtype=float)  # Chuyển thành mảng float
+            inputs = inputs.reshape(1, -1)  # Đảm bảo đầu vào là mảng 2D
         except ValueError as e:
             raise ValueError(f"Lỗi định dạng dữ liệu đầu vào: {inputs}. Chi tiết: {e}")
 
-        # Đảm bảo định dạng đầu vào là mảng 2D
-        inputs = inputs.reshape(1, -1)
+        # In log kiểm tra giá trị inputs
+        print("Dữ liệu đầu vào:", inputs)
 
         # Dự đoán
         prediction = model.predict(inputs)[0]
         predictions.append(prediction)
     return predictions
+print("Dữ liệu quy đổi vật liệu:", quy_doi_materials)
+for key, value in quy_doi_materials.items():
+    if not isinstance(value, (int, float)) or np.isnan(value):
+        raise ValueError(f"Giá trị không hợp lệ cho {key}: {value}")
+
 
 
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
