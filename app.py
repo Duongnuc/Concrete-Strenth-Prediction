@@ -5,22 +5,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-# Đọc dữ liệu phát thải CO2 và giá thành
-phatthai_df = pd.read_csv('phatthai.csv')  # Sửa đường dẫn
-giathanh_df = pd.read_csv('giathanh.csv')  # Sửa đường dẫn
+# Load CSV files
+phatthai_df = pd.read_csv('phatthai.csv')
+giathanh_df = pd.read_csv('giathanh.csv')
+klr_df = pd.read_csv('klr.csv')
 
-# Chuyển đổi dòng phát thải và giá thành thành dictionary
-phatthai = phatthai_df.iloc[0].to_dict()  # Lấy dòng phát thải CO2
-giathanh = giathanh_df.iloc[0].to_dict()  # Lấy dòng giá thành
+# Load model
+model = joblib.load('lightgbm_model.pkl')
 
-# Đọc khối lượng riêng từ file CSV
-klr_df = pd.read_csv('klr.csv')  # Sửa đường dẫn
+# Convert dataframes to dictionaries
+phatthai = phatthai_df.iloc[0].to_dict()
+giathanh = giathanh_df.iloc[0].to_dict()
 klr = klr_df.iloc[0].to_dict()
 
-# Load mô hình đã đào tạo
-model = joblib.load('lightgbm_model.pkl')  # Sửa đường dẫn
-
-# Giới hạn hàm lượng các loại vật liệu
+# Constants for validation
 LIMITS = {
     'cement': (129, 486),
     'slag': (0, 350),
@@ -31,7 +29,6 @@ LIMITS = {
     'fineagg': (555, 971),
 }
 
-# Tên hiển thị tương ứng
 DISPLAY_NAMES = {
     'cement': "Hàm lượng xi măng (kg/m³)",
     'slag': "Hàm lượng xỉ (kg/m³)",
@@ -42,7 +39,7 @@ DISPLAY_NAMES = {
     'fineagg': "Hàm lượng cốt liệu nhỏ (kg/m³)",
 }
 
-# Các hàm tính toán như trước
+# Functions
 def kiem_tra_cap_phoi(quy_doi_materials):
     for mat, (min_val, max_val) in LIMITS.items():
         if not (min_val <= quy_doi_materials[mat] <= max_val):
@@ -70,34 +67,14 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             quy_doi_materials['fineagg'],
             tuoi
         ]
-
-        # Kiểm tra dữ liệu đầu vào
-        try:
-            inputs = np.array(inputs, dtype=float)  # Chuyển thành mảng float
-            inputs = inputs.reshape(1, -1)  # Đảm bảo đầu vào là mảng 2D
-        except ValueError as e:
-            raise ValueError(f"Lỗi định dạng dữ liệu đầu vào: {inputs}. Chi tiết: {e}")
-
-        # In log kiểm tra giá trị inputs
-        print("Dữ liệu đầu vào:", inputs)
-
-        # Dự đoán
+        inputs = np.array(inputs, dtype=float).reshape(1, -1)
         prediction = model.predict(inputs)[0]
         predictions.append(prediction)
     return predictions
-print("Dữ liệu quy đổi vật liệu:", quy_doi_materials)
-for key, value in quy_doi_materials.items():
-    if not isinstance(value, (int, float)) or np.isnan(value):
-        raise ValueError(f"Giá trị không hợp lệ cho {key}: {value}")
-
-
 
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
-    tong_gia_thanh = 0
-    tong_phat_thai = 0
-    for mat in quy_doi_materials:
-        tong_gia_thanh += quy_doi_materials[mat] * giathanh[mat]
-        tong_phat_thai += quy_doi_materials[mat] * phatthai[mat]
+    tong_gia_thanh = sum(quy_doi_materials[mat] * giathanh[mat] for mat in quy_doi_materials)
+    tong_phat_thai = sum(quy_doi_materials[mat] * phatthai[mat] for mat in quy_doi_materials)
     gia_thanh_mpa = tong_gia_thanh / predictions[-1]
     phat_thai_mpa = tong_phat_thai / predictions[-1]
     return tong_gia_thanh, tong_phat_thai, gia_thanh_mpa, phat_thai_mpa
@@ -118,10 +95,9 @@ def ve_duong_xu_huong(tuoi_list, predictions):
     plt.legend()
     st.pyplot(plt)
 
-# Giao diện Streamlit
+# Streamlit UI
 st.title("Dự đoán cường độ bê tông và tính toán kinh tế, phát thải")
 
-# Nhập liệu hàm lượng vật liệu
 st.header("Nhập liệu hàm lượng vật liệu (kg)")
 materials = {
     'cement': st.number_input("Xi măng (kg):", value=350.0),
