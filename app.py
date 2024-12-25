@@ -70,11 +70,21 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             quy_doi_materials['fineagg'],
             tuoi
         ]
-        # In ra để kiểm tra dữ liệu đầu vào
-        print("Dữ liệu đầu vào:", inputs)
-        prediction = model.predict([inputs])[0]
+
+        # Đảm bảo tất cả các giá trị là số và không chứa None
+        try:
+            inputs = np.array(inputs, dtype=float)  # Chuyển sang mảng float
+        except ValueError as e:
+            raise ValueError(f"Lỗi định dạng dữ liệu đầu vào: {inputs}. Chi tiết: {e}")
+
+        # Đảm bảo định dạng đầu vào là mảng 2D
+        inputs = inputs.reshape(1, -1)
+
+        # Dự đoán
+        prediction = model.predict(inputs)[0]
         predictions.append(prediction)
     return predictions
+
 
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
     tong_gia_thanh = 0
