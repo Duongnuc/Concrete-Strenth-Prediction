@@ -57,6 +57,7 @@ def quy_doi_ve_1m3(materials, klr):
 def du_doan_cuong_do(quy_doi_materials, tuoi_list):
     predictions = []
     for tuoi in tuoi_list:
+        # Prepare the input features
         inputs = [
             quy_doi_materials['cement'],
             quy_doi_materials['slag'],
@@ -67,11 +68,28 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             quy_doi_materials['fineagg'],
             tuoi
         ]
-        # Convert inputs to a 2D NumPy array of type float
-        inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)
-        prediction = model.predict(inputs)[0]  # Predict with correct input shape
+        
+        # Convert to 2D NumPy array
+        try:
+            inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)
+        except Exception as e:
+            print("Error converting inputs to NumPy array:", e)
+            raise
+
+        # Debug the shape and content of inputs
+        print("Input shape:", inputs.shape)
+        print("Input values:", inputs)
+
+        # Make prediction
+        try:
+            prediction = model.predict(inputs)[0]  # Ensure input is correctly shaped
+        except Exception as e:
+            print("Error during prediction:", e)
+            raise
+
         predictions.append(prediction)
     return predictions
+
     
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
     tong_gia_thanh = sum(quy_doi_materials[mat] * giathanh[mat] for mat in quy_doi_materials)
