@@ -67,11 +67,12 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             quy_doi_materials['fineagg'],
             tuoi
         ]
-        inputs = np.array(inputs, dtype=float).reshape(1, -1)
-        prediction = model.predict(inputs)[0]
+        # Convert inputs to a 2D NumPy array of type float
+        inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)
+        prediction = model.predict(inputs)[0]  # Predict with correct input shape
         predictions.append(prediction)
     return predictions
-
+    
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
     tong_gia_thanh = sum(quy_doi_materials[mat] * giathanh[mat] for mat in quy_doi_materials)
     tong_phat_thai = sum(quy_doi_materials[mat] * phatthai[mat] for mat in quy_doi_materials)
