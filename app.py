@@ -34,7 +34,7 @@ DISPLAY_NAMES = {
     'slag': "Hàm lượng xỉ (kg/m³)",
     'ash': "Hàm lượng tro bay (kg/m³)",
     'water': "Hàm lượng nước (kg/m³)",
-    'superplastic': "Hàm lượng siêu dẻo (kg/m³)",
+    'superplastic': "Hàm lượng siêu dẻ (kg/m³)",
     'coarseagg': "Hàm lượng cốt liệu lớn (kg/m³)",
     'fineagg': "Hàm lượng cốt liệu nhỏ (kg/m³)",
 }
@@ -103,7 +103,7 @@ materials = {
     'slag': st.number_input("Xỉ (kg):", value=100.0),
     'ash': st.number_input("Tro bay (kg):", value=80.0),
     'water': st.number_input("Nước (kg):", value=150.0),
-    'superplastic': st.number_input("Siêu dẻo (kg):", value=5.0),
+    'superplastic': st.number_input("Siêu dẻ (kg):", value=5.0),
     'coarseagg': st.number_input("Cốt liệu lớn (kg):", value=900.0),
     'fineagg': st.number_input("Cốt liệu nhỏ (kg):", value=800.0),
 }
