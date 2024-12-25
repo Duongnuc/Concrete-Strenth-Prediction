@@ -67,7 +67,11 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             quy_doi_materials['fineagg'],
             tuoi
         ]
-        inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)  # Ensure inputs is 2D
+        # Validate and reshape inputs
+        try:
+            inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)
+        except ValueError as e:
+            raise ValueError(f"Invalid inputs for prediction: {inputs}. Error: {e}")
         predictions.append(model.predict(inputs)[0])
     return predictions
 
@@ -116,20 +120,23 @@ if st.button("Quy đổi về 1m³, dự đoán và tính toán"):
 
     if is_valid:
         tuoi_list = [3, 7, 28, 91]
-        predictions = du_doan_cuong_do(quy_doi_materials, tuoi_list)
-        tong_gia_thanh, tong_phat_thai, gia_thanh_mpa, phat_thai_mpa = tinh_gia_thanh_va_phat_thai(
-            quy_doi_materials, giathanh, phatthai, predictions)
+        try:
+            predictions = du_doan_cuong_do(quy_doi_materials, tuoi_list)
+            tong_gia_thanh, tong_phat_thai, gia_thanh_mpa, phat_thai_mpa = tinh_gia_thanh_va_phat_thai(
+                quy_doi_materials, giathanh, phatthai, predictions)
 
-        st.subheader("Cấp phối đã quy đổi về 1m³:")
-        for mat, value in quy_doi_materials.items():
-            st.write(f"{DISPLAY_NAMES[mat]}: {value:.2f} kg")
+            st.subheader("Cấp phối đã quy đổi về 1m³:")
+            for mat, value in quy_doi_materials.items():
+                st.write(f"{DISPLAY_NAMES[mat]}: {value:.2f} kg")
 
-        st.subheader("Kết quả kinh tế và phát thải:")
-        st.markdown(f'Tổng giá thành: <b style="color:red;">{tong_gia_thanh:.2f} VNĐ</b>', unsafe_allow_html=True)
-        st.markdown(f'Lượng phát thải: <b style="color:red;">{tong_phat_thai:.2f} kg</b>', unsafe_allow_html=True)
-        st.markdown(f'Giá thành/MPa: <b style="color:red;">{gia_thanh_mpa:.2f} VNĐ/MPa</b>', unsafe_allow_html=True)
-        st.markdown(f'CO2/MPa: <b style="color:red;">{phat_thai_mpa:.2f} kg CO2/MPa</b>', unsafe_allow_html=True)
+            st.subheader("Kết quả kinh tế và phát thải:")
+            st.markdown(f'Tổng giá thành: <b style="color:red;">{tong_gia_thanh:.2f} VNĐ</b>', unsafe_allow_html=True)
+            st.markdown(f'Lượng phát thải: <b style="color:red;">{tong_phat_thai:.2f} kg</b>', unsafe_allow_html=True)
+            st.markdown(f'Giá thành/MPa: <b style="color:red;">{gia_thanh_mpa:.2f} VNĐ/MPa</b>', unsafe_allow_html=True)
+            st.markdown(f'CO2/MPa: <b style="color:red;">{phat_thai_mpa:.2f} kg CO2/MPa</b>', unsafe_allow_html=True)
 
-        ve_duong_xu_huong(tuoi_list, predictions)
+            ve_duong_xu_huong(tuoi_list, predictions)
+        except Exception as e:
+            st.error(f"Lỗi trong quá trình dự đoán: {e}")
     else:
         st.warning("Không thể tiến hành dự đoán do cấp phối không phù hợp.")
