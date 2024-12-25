@@ -53,24 +53,10 @@ def quy_doi_ve_1m3(materials, klr):
     total_volume = sum(materials[mat] / klr[mat] for mat in materials.keys())
     he_so_quy_doi = 1000 / total_volume
     return {mat: materials[mat] * he_so_quy_doi for mat in materials.keys()}
-# Validate quy_doi_materials
-try:
-    # Kiểm tra dữ liệu đầu vào
-    for key, value in quy_doi_materials.items():
-        if not isinstance(value, (int, float)) or np.isnan(value):
-            raise ValueError(f"Giá trị không hợp lệ cho {key}: {value}")
-
-    # Dự đoán cường độ bê tông
-    predictions = du_doan_cuong_do(quy_doi_materials, tuoi_list)
-except ValueError as e:
-    st.error(f"Lỗi: {e}")
-    predictions = []
-
 
 def du_doan_cuong_do(quy_doi_materials, tuoi_list):
     predictions = []
     for tuoi in tuoi_list:
-        # Prepare the input features
         inputs = [
             quy_doi_materials['cement'],
             quy_doi_materials['slag'],
@@ -81,28 +67,8 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             quy_doi_materials['fineagg'],
             tuoi
         ]
-        
-        # Ensure inputs is a 2D array
-        try:
-            inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)
-        except Exception as e:
-            raise ValueError(f"Error converting inputs to NumPy array: {e}")
-
-        # Debugging: Print inputs for verification
-        print("Input for prediction:", inputs)
-
-        # Ensure no NaN or invalid values
-        if np.isnan(inputs).any():
-            raise ValueError(f"Invalid input: Contains NaN values. Inputs: {inputs}")
-
-        # Make prediction
-        try:
-            prediction = model.predict(inputs)[0]
-        except Exception as e:
-            raise ValueError(f"Error during model prediction: {e}")
-
-        predictions.append(prediction)
-
+        inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)  # Ensure inputs is 2D
+        predictions.append(model.predict(inputs)[0])
     return predictions
 
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
