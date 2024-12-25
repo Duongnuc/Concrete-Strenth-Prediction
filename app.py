@@ -106,9 +106,9 @@ st.title("Dự đoán cường độ bê tông và tính toán kinh tế, phát 
 # Nhập liệu hàm lượng vật liệu
 st.header("Nhập liệu hàm lượng vật liệu (kg)")
 materials = {
-    'cement': st.number_input("Xi măng (kg):", value=250.0),
+    'cement': st.number_input("Xi măng (kg):", value=350.0),
     'slag': st.number_input("Xỉ (kg):", value=100.0),
-    'ash': st.number_input("Tro bay (kg):", value=150.0),
+    'ash': st.number_input("Tro bay (kg):", value=80.0),
     'water': st.number_input("Nước (kg):", value=150.0),
     'superplastic': st.number_input("Siêu dẻo (kg):", value=5.0),
     'coarseagg': st.number_input("Cốt liệu lớn (kg):", value=900.0),
