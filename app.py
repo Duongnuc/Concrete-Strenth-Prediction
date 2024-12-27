@@ -6,17 +6,38 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Load CSV files
-phatthai_df = pd.read_csv('phatthai.csv')
-giathanh_df = pd.read_csv('giathanh.csv')
-klr_df = pd.read_csv('klr.csv')
+try:
+    phatthai_df = pd.read_csv('phatthai.csv')
+    giathanh_df = pd.read_csv('giathanh.csv')
+    klr_df = pd.read_csv('klr.csv')
+except FileNotFoundError as e:
+    st.error(f"Lỗi: Không tìm thấy tệp dữ liệu. Đảm bảo các tệp 'phatthai.csv', 'giathanh.csv', và 'klr.csv' có trong thư mục: {e}")
+    st.stop()
 
 # Load model
-model = joblib.load('lightgbm_model.pkl')
+try:
+    model = joblib.load('model_gbm.pkl')
+    if model is None:
+        st.error("Mô hình không được tải thành công. Đảm bảo file 'lightgbm_model.pkl' tồn tại.")
+        st.stop()
+    if not callable(getattr(model, "predict", None)):
+        st.error("Mô hình được tải nhưng không hợp lệ (không có hàm predict). Kiểm tra mô hình của bạn.")
+        st.stop()
+except FileNotFoundError as e:
+    st.error(f"Lỗi: Không tìm thấy tệp mô hình 'lightgbm_model.pkl'. {e}")
+    st.stop()
+except Exception as e:
+    st.error(f"Lỗi trong quá trình tải mô hình: {e}")
+    st.stop()
 
 # Convert dataframes to dictionaries
-phatthai = phatthai_df.iloc[0].to_dict()
-giathanh = giathanh_df.iloc[0].to_dict()
-klr = klr_df.iloc[0].to_dict()
+try:
+    phatthai = phatthai_df.iloc[0].to_dict()
+    giathanh = giathanh_df.iloc[0].to_dict()
+    klr = klr_df.iloc[0].to_dict()
+except Exception as e:
+    st.error(f"Lỗi trong quá trình xử lý dữ liệu CSV: {e}")
+    st.stop()
 
 # Constants for validation
 LIMITS = {
@@ -72,7 +93,15 @@ def du_doan_cuong_do(quy_doi_materials, tuoi_list):
             inputs = np.array(inputs, dtype=np.float64).reshape(1, -1)
         except ValueError as e:
             raise ValueError(f"Invalid inputs for prediction: {inputs}. Error: {e}")
-        predictions.append(model.predict(inputs)[0])
+        try:
+            st.write("Dữ liệu đầu vào cho dự đoán:", inputs)
+            if model is not None:
+                predictions.append(model.predict(inputs)[0])
+            else:
+                raise ValueError("Model is not properly loaded or initialized.")
+        except Exception as e:
+            st.error(f"Lỗi khi dự đoán với đầu vào: {inputs}. Chi tiết lỗi: {e}")
+            raise e
     return predictions
 
 def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictions):
@@ -85,18 +114,21 @@ def tinh_gia_thanh_va_phat_thai(quy_doi_materials, giathanh, phatthai, predictio
 def ve_duong_xu_huong(tuoi_list, predictions):
     def logistic_growth(x, a, b, c):
         return a / (1 + np.exp(-b * (x - c)))
-    params, _ = curve_fit(logistic_growth, tuoi_list, predictions, maxfev=10000, bounds=(0, [np.inf, np.inf, np.inf]))
-    tuoi_fit = np.linspace(min(tuoi_list), max(tuoi_list), 100)
-    predictions_fit = logistic_growth(tuoi_fit, *params)
-    plt.figure(figsize=(8, 5))
-    plt.scatter(tuoi_list, predictions, color='blue', label="Cường độ thực tế")
-    plt.plot(tuoi_fit, predictions_fit, color='red', linestyle='--', label="Đường xu hướng")
-    plt.title("Cường độ bê tông theo ngày tuổi")
-    plt.xlabel("Ngày tuổi")
-    plt.ylabel("Cường độ (MPa)")
-    plt.grid(True)
-    plt.legend()
-    st.pyplot(plt)
+    try:
+        params, _ = curve_fit(logistic_growth, tuoi_list, predictions, maxfev=10000, bounds=(0, [np.inf, np.inf, np.inf]))
+        tuoi_fit = np.linspace(min(tuoi_list), max(tuoi_list), 100)
+        predictions_fit = logistic_growth(tuoi_fit, *params)
+        plt.figure(figsize=(8, 5))
+        plt.scatter(tuoi_list, predictions, color='blue', label="Cường độ thực tế")
+        plt.plot(tuoi_fit, predictions_fit, color='red', linestyle='--', label="Đường xu hướng")
+        plt.title("Cường độ bê tông theo ngày tuổi")
+        plt.xlabel("Ngày tuổi")
+        plt.ylabel("Cường độ (MPa)")
+        plt.grid(True)
+        plt.legend()
+        st.pyplot(plt)
+    except Exception as e:
+        st.error(f"Lỗi khi vẽ đồ thị: {e}")
 
 # Streamlit UI
 st.title("Dự đoán cường độ bê tông và tính toán kinh tế, phát thải")
@@ -113,30 +145,33 @@ materials = {
 }
 
 if st.button("Quy đổi về 1m³, dự đoán và tính toán"):
-    quy_doi_materials = quy_doi_ve_1m3(materials, klr)
-    is_valid, message = kiem_tra_cap_phoi(quy_doi_materials)
-    st.subheader("Kết quả kiểm tra cấp phối:")
-    st.write(message)
+    try:
+        quy_doi_materials = quy_doi_ve_1m3(materials, klr)
+        is_valid, message = kiem_tra_cap_phoi(quy_doi_materials)
+        st.subheader("Kết quả kiểm tra cấp phối:")
+        st.write(message)
 
-    if is_valid:
-        tuoi_list = [3, 7, 28, 91]
-        try:
+        if is_valid:
+            tuoi_list = [3, 7, 28, 91]
             predictions = du_doan_cuong_do(quy_doi_materials, tuoi_list)
-            tong_gia_thanh, tong_phat_thai, gia_thanh_mpa, phat_thai_mpa = tinh_gia_thanh_va_phat_thai(
-                quy_doi_materials, giathanh, phatthai, predictions)
+            try:
+                tong_gia_thanh, tong_phat_thai, gia_thanh_mpa, phat_thai_mpa = tinh_gia_thanh_va_phat_thai(
+                    quy_doi_materials, giathanh, phatthai, predictions)
+                
+                st.subheader("Cấp phối đã quy đổi về 1m³:")
+                for mat, value in quy_doi_materials.items():
+                    st.write(f"{DISPLAY_NAMES[mat]}: {value:.2f} kg")
 
-            st.subheader("Cấp phối đã quy đổi về 1m³:")
-            for mat, value in quy_doi_materials.items():
-                st.write(f"{DISPLAY_NAMES[mat]}: {value:.2f} kg")
+                st.subheader("Kết quả kinh tế và phát thải:")
+                st.markdown(f'Tổng giá thành: <b style="color:red;">{tong_gia_thanh:.2f} VNĐ</b>', unsafe_allow_html=True)
+                st.markdown(f'Lượng phát thải: <b style="color:red;">{tong_phat_thai:.2f} kg</b>', unsafe_allow_html=True)
+                st.markdown(f'Giá thành/MPa: <b style="color:red;">{gia_thanh_mpa:.2f} VNĐ/MPa</b>', unsafe_allow_html=True)
+                st.markdown(f'CO2/MPa: <b style="color:red;">{phat_thai_mpa:.2f} kg CO2/MPa</b>', unsafe_allow_html=True)
 
-            st.subheader("Kết quả kinh tế và phát thải:")
-            st.markdown(f'Tổng giá thành: <b style="color:red;">{tong_gia_thanh:.2f} VNĐ</b>', unsafe_allow_html=True)
-            st.markdown(f'Lượng phát thải: <b style="color:red;">{tong_phat_thai:.2f} kg</b>', unsafe_allow_html=True)
-            st.markdown(f'Giá thành/MPa: <b style="color:red;">{gia_thanh_mpa:.2f} VNĐ/MPa</b>', unsafe_allow_html=True)
-            st.markdown(f'CO2/MPa: <b style="color:red;">{phat_thai_mpa:.2f} kg CO2/MPa</b>', unsafe_allow_html=True)
-
-            ve_duong_xu_huong(tuoi_list, predictions)
-        except Exception as e:
-            st.error(f"Lỗi trong quá trình dự đoán: {e}")
-    else:
-        st.warning("Không thể tiến hành dự đoán do cấp phối không phù hợp.")
+                ve_duong_xu_huong(tuoi_list, predictions)
+            except Exception as e:
+                st.error(f"Lỗi trong quá trình tính toán kinh tế và phát thải: {e}")
+        else:
+            st.warning("Không thể tiến hành dự đoán do cấp phối không phù hợp.")
+    except Exception as e:
+        st.error(f"Lỗi tổng quát: {e}")
